@@ -19,7 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include<stdio.h>
-
+#include "kernel.h"
+extern uint32_t* stackptr;
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -68,55 +69,25 @@ void print_continuously(){
 	}
 }
 
-void jumpAssembly(void* fcn)
-{
-	__asm("MOV PC, R0");
-}
-
-uint32_t* stackptr;
-
-
-void SVC_Handler_Main( unsigned int *svc_args )
-{
-	unsigned int svc_number;
-	/*
-	* Stack contains:
-	* r0, r1, r2, r3, r12, r14, the return address and xPSR
-	* First argument (r0) is svc_args[0]
-	*/
-	svc_number = ( ( char * )svc_args[ 6 ] )[ -2 ] ;
-	switch( svc_number )
-	{
-		case 10:
-			__set_PSP(stackptr);
-			runFirstThread();
-			break;
-		case 17: //17 is sort of arbitrarily chosen
-			printf("Success!\r\n");
-			break;
-		case 1:
-			printf("Failure!\r\n");
-			break;
-		case 2:
-			printf("Unknown\r\n");
-		default: /* unknown SVC */
-			break;
-	}
-}
-
-void print_success(void)
-{
-	__asm("SVC #17");
-}
-void print_failure(void){
-	__asm("SVC #1");
-}
-void print_unknown(void){
-	__asm("SVC #2");
-}
-void run_first_thread_call(void){
-	__asm("SVC #10");
-}
+//void jumpAssembly(void* fcn)
+//{
+//	__asm("MOV PC, R0");
+//}
+//
+//
+//void print_success(void)
+//{
+//	__asm("SVC #17");
+//}
+//void print_failure(void){
+//	__asm("SVC #1");
+//}
+//void print_unknown(void){
+//	__asm("SVC #2");
+//}
+//void run_first_thread_call(void){
+//	__asm("SVC #10");
+//}
 
 /* USER CODE END PFP */
 
@@ -161,28 +132,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint32_t* MSP_INIT_VAL = *(uint32_t**)0x0;
-  printf("MSP Init is: %p\n\r",MSP_INIT_VAL); //note the %p to print a pointer. It will be in hex
-  uint32_t PSP_val = (uint32_t)MSP_INIT_VAL - 0x400;
-  __set_PSP(PSP_val);
 
 //  used for lab 1
 //  __set_CONTROL(2);
 
 //  print_continuously();
 //  jumpAssembly((void*)print_continuously);
-  print_success();
-  print_failure();
-  print_unknown();
-
-  stackptr = PSP_val;
-  *(--stackptr) = 1<<24; //A magic number, this is xPSR
-	*(--stackptr) = (uint32_t)print_continuously; //the function name
-	for (int i = 0; i < 14; i++){
-		*(--stackptr) = 0xA; //An arbitrary number
-	}
-
-  run_first_thread_call();
+//
+  osKernelInitialize();
+  osCreateThread((void*)print_continuously);
+  osKernelStart();
   //  while (1)
 //  {
 //    /* USER CODE END WHILE */
