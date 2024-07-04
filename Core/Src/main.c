@@ -1,61 +1,17 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+// includes
 #include "main.h"
 #include<stdio.h>
 #include "kernel.h"
 extern uint32_t* stackptr;
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
+// function definitions
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 extern void runFirstThread(void);
 
 
-/* USER CODE BEGIN PFP */
 int __io_putchar(int ch)
 {
 	HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,HAL_MAX_DELAY);
@@ -66,7 +22,48 @@ int __io_putchar(int ch)
 void print_continuously(){
 	while (1){
 		printf("Hello, PC!\r\n");
+		osYield();
 	}
+}
+
+void thread1(){
+	while(1){
+		printf("Thread 1\r\n");
+		osYield();
+	}
+}
+
+void thread2(){
+	while (1){
+		printf("Thread 2\r\n");
+		osYield();
+	}
+}
+
+
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_USART2_UART_Init();
+
+  osKernelInitialize();
+  osCreateThread((void*)thread1);
+  osCreateThread((void*)thread2);
+  osKernelStart();
 }
 
 //void jumpAssembly(void* fcn)
@@ -88,70 +85,6 @@ void print_continuously(){
 //void run_first_thread_call(void){
 //	__asm("SVC #10");
 //}
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-
-//  used for lab 1
-//  __set_CONTROL(2);
-
-//  print_continuously();
-//  jumpAssembly((void*)print_continuously);
-//
-  osKernelInitialize();
-  osCreateThread((void*)print_continuously);
-  osKernelStart();
-  //  while (1)
-//  {
-//    /* USER CODE END WHILE */
-//	  char 	m = 'm';
-//	  printf("MSP Init is: %p\n\r",MSP_INIT_VAL); //note the %p to print a pointer. It will be in hex
-////	  HAL_UART_Transmit(&huart2,&m,1,HAL_MAX_DELAY);
-//    /* USER CODE BEGIN 3 */
-//  }
-  /* USER CODE END 3 */
-}
 
 /**
   * @brief System Clock Configuration

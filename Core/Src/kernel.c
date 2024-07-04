@@ -1,18 +1,15 @@
-/*
- * kernel.c
- *
- *  Created on: Jun 13, 2024
- *      Author: owenm
- */
 #include "main.h"
 #include<stdio.h>
 #include<stdbool.h>
 #include "kernel.h"
 
 uint32_t* stackptr;
-thread currentThread;
+struct k_thread threadArray[100];
+uint32_t currentThread;
+uint32_t numThreadsRunning;
 uint32_t* lastAllocatedStackPtr;
 uint32_t* MSP_INIT_VAL;
+
 void SVC_Handler_Main( unsigned int *svc_args )
 {
 	unsigned int svc_number;
@@ -36,6 +33,10 @@ void SVC_Handler_Main( unsigned int *svc_args )
 			break;
 		case 2:
 			printf("Unknown\r\n");
+		case 20:
+			//Pend an interrupt to do the context switch
+			_ICSR |= 1<<28;
+			__asm("isb");
 		default: /* unknown SVC */
 			break;
 	}
@@ -52,10 +53,14 @@ uint32_t* addThreadToStack(){
 }
 
 void osKernelInitialize(){
+	//set the priority of PendSV to almost the weakest
+	SHPR3 |= 0xFE << 16; //shift the constant 0xFE 16 bits to set PendSV priority
+	SHPR2 |= 0xFDU << 24; //Set the priority of SVC higher than PendSV
+
 	MSP_INIT_VAL = *(uint32_t**)0x0;
-	printf("MSP Init is: %p\n\r",MSP_INIT_VAL); //note the %p to print a pointer. It will be in hex
 	lastAllocatedStackPtr = MSP_INIT_VAL;
-	printf("dhfgsk");
+
+	numThreadsRunning = 0;
 }
 
 bool osCreateThread(void *funcPointer){
@@ -69,12 +74,24 @@ bool osCreateThread(void *funcPointer){
 		*(--stackptr) = 0xA; //An arbitrary number
 	}
 
-	currentThread.sp = stackptr;
-	currentThread.thread_function = funcPointer;
+	currentThread = numThreadsRunning;
+	numThreadsRunning += 1;
+	threadArray[currentThread].sp = stackptr;
+	threadArray[currentThread].thread_function = funcPointer;
 
 	return true;
 }
 
 void osKernelStart(){
 	__asm("SVC #10");
+}
+
+void osYield(){
+	__asm("SVC #20");
+}
+
+void osSched(){
+	threadArray[currentThread].sp = (uint32_t*)(__get_PSP() - 8*4);
+	currentThread = (currentThread+1)%numThreadsRunning;
+	__set_PSP(threadArray[currentThread].sp);
 }
