@@ -11,6 +11,10 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 extern void runFirstThread(void);
 
+typedef struct myStruct{
+	int structInt;
+	char structChar;
+} myStruct;
 
 int __io_putchar(int ch)
 {
@@ -26,17 +30,21 @@ void print_continuously(){
 	}
 }
 
-void thread1(){
+
+int printInt = 0;
+void yieldThread(void *args){
+	myStruct arg = *(myStruct*)args;
 	while(1){
-		printf("Thread 1\r\n");
+		printInt += 1;
+		printf("\r\nIncrementing Integer\r\n");
 		osYield();
 	}
 }
 
-void thread2(){
+void runThread(void *args){
+	int arg = *(int*)args;
 	while (1){
-		printf("Thread 2\r\n");
-		osYield();
+		printf("Integer: %d\r\n", printInt);
 	}
 }
 
@@ -53,6 +61,9 @@ void thread2(){
   * @brief  The application entry point.
   * @retval int
   */
+
+
+
 int main(void)
 {
   HAL_Init();
@@ -61,9 +72,15 @@ int main(void)
   MX_USART2_UART_Init();
 
   osKernelInitialize();
-  osCreateThread((void*)thread1);
-  osCreateThread((void*)thread2);
+  myStruct *x = (myStruct *)malloc(sizeof(myStruct));
+  int *y = (int *)malloc(sizeof(int)); // Allocate memory for int
+  x->structInt = 10;
+  x->structChar = 'c';
+  *y = 20;
+  osCreateThread((void*)yieldThread, x);
+  osCreateThreadWithDeadline((void*)runThread, y, 50);
   osKernelStart();
+
 }
 
 //void jumpAssembly(void* fcn)

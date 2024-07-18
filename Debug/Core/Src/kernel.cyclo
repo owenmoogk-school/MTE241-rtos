@@ -1,7 +1,9 @@
 ../Core/Src/kernel.c:13:6:SVC_Handler_Main	6
-../Core/Src/kernel.c:46:11:addThreadToStack	2
-../Core/Src/kernel.c:55:6:osKernelInitialize	1
-../Core/Src/kernel.c:66:6:osCreateThread	3
-../Core/Src/kernel.c:85:6:osKernelStart	1
-../Core/Src/kernel.c:89:6:osYield	1
-../Core/Src/kernel.c:93:6:osSched	1
+../Core/Src/kernel.c:48:11:addThreadToStack	2
+../Core/Src/kernel.c:57:6:osKernelInitialize	1
+../Core/Src/kernel.c:68:6:osCreateThread	4
+../Core/Src/kernel.c:93:6:osCreateThreadWithDeadline	4
+../Core/Src/kernel.c:119:6:osKernelStart	1
+../Core/Src/kernel.c:123:6:osYield	1
+../Core/Src/kernel.c:128:6:sysTickInterrupt	2
+../Core/Src/kernel.c:137:6:osSched	1

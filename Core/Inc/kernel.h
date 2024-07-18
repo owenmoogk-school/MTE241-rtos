@@ -12,7 +12,9 @@
 #include<stdint.h>
 void SVC_Handler_Main( unsigned int *svc_args );
 extern uint32_t* addThreadToStack();
-extern bool osCreateThread(void* funcPointer);
+extern bool osCreateThread(void* funcPointer, void* argPtr);
+extern bool osCreateThreadWithDeadline(void* funcPointer, void* argPtr, int runtime);
+
 extern void osKernelInitialize();
 extern void osKernelStart();
 
@@ -23,6 +25,8 @@ extern void osKernelStart();
 typedef struct k_thread{
 	uint32_t* sp; //stack pointer
 	void (*thread_function)(void*); //function pointer
+	int timeslice; // ms
+	int runtime; // ms
 };
 
 

@@ -33,10 +33,12 @@ void SVC_Handler_Main( unsigned int *svc_args )
 			break;
 		case 2:
 			printf("Unknown\r\n");
+			break;
 		case 20:
 			//Pend an interrupt to do the context switch
 			_ICSR |= 1<<28;
 			__asm("isb");
+			break;
 		default: /* unknown SVC */
 			break;
 	}
@@ -63,14 +65,18 @@ void osKernelInitialize(){
 	numThreadsRunning = 0;
 }
 
-bool osCreateThread(void *funcPointer){
+bool osCreateThread(void *funcPointer, void *argPtr){
 	stackptr = addThreadToStack();
 	if (stackptr == NULL){
 		return false;
 	}
 	*(--stackptr) = 1<<24; //A magic number, this is xPSR
 	*(--stackptr) = (uint32_t)funcPointer; //the function name
-	for (int i = 0; i < 14; i++){
+	for (int i = 0; i < 5; i++){
+		*(--stackptr) = 0xA; //An arbitrary number
+	}
+	*(--stackptr) = (uint32_t)argPtr;
+	for (int i = 0; i < 8; i++){
 		*(--stackptr) = 0xA; //An arbitrary number
 	}
 
@@ -78,9 +84,37 @@ bool osCreateThread(void *funcPointer){
 	numThreadsRunning += 1;
 	threadArray[currentThread].sp = stackptr;
 	threadArray[currentThread].thread_function = funcPointer;
+	threadArray[currentThread].runtime = 20;
+	threadArray[currentThread].timeslice = 20;
 
 	return true;
 }
+
+bool osCreateThreadWithDeadline(void *funcPointer, void *argPtr, int runtime){
+	stackptr = addThreadToStack();
+	if (stackptr == NULL){
+		return false;
+	}
+	*(--stackptr) = 1<<24; //A magic number, this is xPSR
+	*(--stackptr) = (uint32_t)funcPointer; //the function name
+	for (int i = 0; i < 5; i++){
+		*(--stackptr) = 0xA; //An arbitrary number
+	}
+	*(--stackptr) = (uint32_t)argPtr;
+	for (int i = 0; i < 8; i++){
+		*(--stackptr) = 0xA; //An arbitrary number
+	}
+
+	currentThread = numThreadsRunning;
+	numThreadsRunning += 1;
+	threadArray[currentThread].sp = stackptr;
+	threadArray[currentThread].thread_function = funcPointer;
+	threadArray[currentThread].runtime = runtime;
+	threadArray[currentThread].timeslice = runtime;
+
+	return true;
+}
+
 
 void osKernelStart(){
 	__asm("SVC #10");
@@ -88,6 +122,16 @@ void osKernelStart(){
 
 void osYield(){
 	__asm("SVC #20");
+}
+
+// happens every ms
+void sysTickInterrupt(){
+	threadArray[currentThread].runtime -= 1;
+	if (threadArray[currentThread].runtime <= 0){
+		threadArray[currentThread].runtime = threadArray[currentThread].timeslice;
+		_ICSR |= 1<<28;
+		__asm("isb");
+	}
 }
 
 void osSched(){
